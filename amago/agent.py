@@ -454,15 +454,16 @@ class Agent(nn.Module):
             "time_idxs": {0: "batch_size", 1: "seq_length"},
         }
         traj_encoder_onnx = 'traj_encoder.onnx'
-        torch.onnx.export(
-            self.traj_encoder,
-            traj_encoder_input,
-            traj_encoder_onnx,
-            do_constant_folding=True,
-            input_names=["seq", "time_idxs"],
-            output_names=["traj_emb_t"],
-            dynamic_shapes=dynamic_shapes,
-        )
+        with torch.no_grad():
+            torch.onnx.export(
+                self.traj_encoder,
+                traj_encoder_input,
+                traj_encoder_onnx,
+                do_constant_folding=True,
+                input_names=["seq", "time_idxs"],
+                output_names=["traj_emb_t"],
+                dynamic_shapes=dynamic_shapes,
+            )
 
         # 3. actor
         # generate action distribution [batch, length, len(self.gammas), d_action]
