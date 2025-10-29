@@ -459,9 +459,7 @@ class Agent(nn.Module):
             output_names=["traj_emb_t", "hidden_state"],
             dynamic_axes={
                 "seq":{0:"batch_size", 1:"seq_length"},
-                "time_idxs":{0:"batch_size", 1:"seq_length"}, 
-                "traj_emb_t":{0:"batch_size", 1:"seq_length"},
-                "hidden_state":{0:"batch_size", 1:"seq_length"},
+                "time_idxs":{0:"batch_size", 1:"seq_length"},
             },
         )
 
