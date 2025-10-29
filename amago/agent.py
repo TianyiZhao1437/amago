@@ -449,6 +449,11 @@ class Agent(nn.Module):
             tstep_emb, time_idxs=time_idxs, hidden_state=hidden_state
         )
         traj_encoder_input = (tstep_emb, time_idxs, hidden_state)
+        dynamic_shapes = {
+            "seq": {0: "batch_size", 1: "seq_length"},
+            "time_idxs": {0: "batch_size", 1: "seq_length"},
+            "hidden_state": {0: "batch_size", 1: "seq_length"},
+        }
         traj_encoder_onnx = 'traj_encoder.onnx'
         torch.onnx.export(
             self.traj_encoder,
@@ -457,11 +462,7 @@ class Agent(nn.Module):
             do_constant_folding=True,
             input_names=["seq", "time_idxs", "hidden_state_in"],
             output_names=["traj_emb_t", "hidden_state_out"],
-            dynamic_axes={
-                "seq":{0:"batch_size", 1:"seq_length"},
-                "time_idxs":{0:"batch_size", 1:"seq_length"},
-                "hidden_state":{0:"batch_size", 1:"seq_length"},
-            },
+            dynamic_shapes=dynamic_shapes,
         )
 
         # 3. actor
