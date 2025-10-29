@@ -366,12 +366,12 @@ class Agent(nn.Module):
         self.hard_sync_targets()
         self.pass_obs_keys_to_actor = pass_obs_keys_to_actor or []
 
-        # init agent model
-        self.agent_model = AgentModel(
-            tstep_encoder=self.tstep_encoder,
-            traj_encoder=self.traj_encoder,
-            actor=self.actor,
-        )
+        # # init agent model
+        # self.agent_model = AgentModel(
+        #     tstep_encoder=self.tstep_encoder,
+        #     traj_encoder=self.traj_encoder,
+        #     actor=self.actor,
+        # )
 
     @property
     def trainable_params(self):
