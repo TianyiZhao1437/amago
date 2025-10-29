@@ -160,8 +160,10 @@ class AgentModel(nn.Module):
             traj_emb_t,
             straight_from_obs={k: obs[k] for k in self.pass_obs_keys_to_actor},
         )
+        actions = torch.argmax(action_dists.probs, dim=-1, keepdim=True)
+        actions = actions[..., -1, :]
 
-        return action_dists, hidden_state
+        return actions, hidden_state
 
 
 @gin.configurable
@@ -364,6 +366,13 @@ class Agent(nn.Module):
         self.hard_sync_targets()
         self.pass_obs_keys_to_actor = pass_obs_keys_to_actor or []
 
+        # init agent model
+        self.agent_model = AgentModel(
+            tstep_encoder=self.tstep_encoder,
+            traj_encoder=self.traj_encoder,
+            actor=self.actor,
+        )
+
     @property
     def trainable_params(self):
         """Iterable over all trainable parameters, which should be passed to the optimizer."""
@@ -428,40 +437,35 @@ class Agent(nn.Module):
                   ("test-time") discount factor* `Agent.gamma`.
                 - Updated hidden state of the TrajEncoder.
         """
-        numbers = obs['numbers']
-        text_tokens = obs['text_tokens']
-        illegal_actions = obs['illegal_actions']
-        stat_dict = {
-            'numbers': numbers,
-            'text_tokens': text_tokens,
-            'illegal_actions': illegal_actions,
-            'rl2s': rl2s,
-            'time_idxs': time_idxs,
-        }
-        save_file(stat_dict, 'input.safetensors')
 
-        tstep_emb = self.tstep_encoder(obs=obs, rl2s=rl2s)
-        # sequence model embedding [batch, length, d_emb]
-        traj_emb_t, hidden_state = self.traj_encoder(
-            tstep_emb, time_idxs=time_idxs, hidden_state=hidden_state
+        # tstep_emb = self.tstep_encoder(obs=obs, rl2s=rl2s)
+        # # sequence model embedding [batch, length, d_emb]
+        # traj_emb_t, hidden_state = self.traj_encoder(
+        #     tstep_emb, time_idxs=time_idxs, hidden_state=hidden_state
+        # )
+        # # generate action distribution [batch, length, len(self.gammas), d_action]
+        # action_dists = self.actor(
+        #     traj_emb_t,
+        #     straight_from_obs={k: obs[k] for k in self.pass_obs_keys_to_actor},
+        # )
+        # if sample:
+        #     actions = action_dists.sample()
+        # else:
+        #     if self.discrete:
+        #         actions = torch.argmax(action_dists.probs, dim=-1, keepdim=True)
+        #     else:
+        #         actions = action_dists.mean
+        # # get intended gamma distribution (always in -1 idx)
+        # actions = actions[..., -1, :]
+
+        # replace with agent model
+        actions, hidden_state = self.agent_model(
+            numbers=obs['numbers'],
+            text_tokens=obs['text_tokens'],
+            illegal_actions=obs['illegal_actions'],
+            rl2s=rl2s,
+            time_idxs=time_idxs,
         )
-        # generate action distribution [batch, length, len(self.gammas), d_action]
-        action_dists = self.actor(
-            traj_emb_t,
-            straight_from_obs={k: obs[k] for k in self.pass_obs_keys_to_actor},
-        )
-        if sample:
-            print("[ty]enter sample")
-            actions = action_dists.sample()
-        else:
-            if self.discrete:
-                print("[ty]enter argmax")
-                actions = torch.argmax(action_dists.probs, dim=-1, keepdim=True)
-            else:
-                print("[ty]enter mean")
-                actions = action_dists.mean
-        # get intended gamma distribution (always in -1 idx)
-        actions = actions[..., -1, :]
         dtype = torch.uint8 if (self.discrete or self.multibinary) else torch.float32
         return actions.to(dtype=dtype), hidden_state
 
