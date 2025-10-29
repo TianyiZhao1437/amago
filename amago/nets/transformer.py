@@ -712,9 +712,10 @@ class Transformer(nn.Module):
             seq = layer(seq)
         return self.norm(seq)
 
-    def inference_forward(self, seq, hidden_state):
+    def inference_forward(self, seq, hidden_state=None):
         for i, layer in enumerate(self.layers):
-            seq = layer(seq, *hidden_state[i])
+            # seq = layer(seq, *hidden_state[i])
+            seq = layer(seq)
         return self.norm(seq)
 
     def forward(self, seq, pos_idxs, hidden_state: Optional[TformerHiddenState] = None):
@@ -732,9 +733,10 @@ class Transformer(nn.Module):
 
         traj_emb = self.preprocess_seq(seq, pos_idxs)
         if hidden_state is not None:
-            assert not self.training
-            traj_emb = self.inference_forward(traj_emb, hidden_state)
-            hidden_state.update()
+            # assert not self.training
+            # traj_emb = self.inference_forward(traj_emb, hidden_state)
+            traj_emb = self.inference_forward(traj_emb)
+            # hidden_state.update()
         else:
             assert self.training
             traj_emb = self.training_forward(traj_emb)
