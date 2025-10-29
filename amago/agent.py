@@ -14,6 +14,7 @@ import wandb
 import gin
 import gymnasium as gym
 
+from safetensors.torch import save_file
 from amago.loading import Batch, MAGIC_PAD_VAL
 from amago.nets.tstep_encoders import TstepEncoder
 from amago.nets.traj_encoders import TrajEncoder
@@ -124,6 +125,43 @@ def exp_filter(
     if clip_weights_low is not None or clip_weights_high is not None:
         weights = torch.clamp(weights, min=clip_weights_low, max=clip_weights_high)
     return weights
+
+class AgentModel(nn.Module):
+    def __init__(
+        self,
+        tstep_encoder,
+        traj_encoder,
+        actor,
+    ):
+        self.tstep_encoder = tstep_encoder
+        self.traj_encoder = traj_encoder
+        self.actor = actor
+
+    def forward(
+        self,
+        numbers,
+        text_tokens,
+        illegal_actions,
+        rl2s,
+        time_idxs,
+    ):
+        obs = {
+            'numbers': numbers,
+            'text_tokens': text_tokens,
+            'illegal_actions': illegal_actions,
+        }
+        tstep_emb = self.tstep_encoder(obs=obs, rl2s=rl2s)
+        # sequence model embedding [batch, length, d_emb]
+        traj_emb_t, hidden_state = self.traj_encoder(
+            tstep_emb, time_idxs=time_idxs
+        )
+        # generate action distribution [batch, length, len(self.gammas), d_action]
+        action_dists = self.actor(
+            traj_emb_t,
+            straight_from_obs={k: obs[k] for k in self.pass_obs_keys_to_actor},
+        )
+
+        return action_dists, hidden_state
 
 
 @gin.configurable
@@ -390,6 +428,18 @@ class Agent(nn.Module):
                   ("test-time") discount factor* `Agent.gamma`.
                 - Updated hidden state of the TrajEncoder.
         """
+        numbers = obs['numbers']
+        text_tokens = obs['text_tokens']
+        illegal_actions = obs['illegal_actions']
+        stat_dict = {
+            'numbers': numbers,
+            'text_tokens': text_tokens,
+            'illegal_actions': illegal_actions,
+            'rl2s': rl2s,
+            'time_idxs': time_idxs,
+        }
+        save_file(stat_dict, 'input.safetensors')
+
         tstep_emb = self.tstep_encoder(obs=obs, rl2s=rl2s)
         # sequence model embedding [batch, length, d_emb]
         traj_emb_t, hidden_state = self.traj_encoder(
@@ -401,11 +451,14 @@ class Agent(nn.Module):
             straight_from_obs={k: obs[k] for k in self.pass_obs_keys_to_actor},
         )
         if sample:
+            print("[ty]enter sample")
             actions = action_dists.sample()
         else:
             if self.discrete:
+                print("[ty]enter argmax")
                 actions = torch.argmax(action_dists.probs, dim=-1, keepdim=True)
             else:
+                print("[ty]enter mean")
                 actions = action_dists.mean
         # get intended gamma distribution (always in -1 idx)
         actions = actions[..., -1, :]
