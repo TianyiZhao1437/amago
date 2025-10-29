@@ -445,9 +445,9 @@ class Agent(nn.Module):
 
         # 2. traj_encoder
         # sequence model embedding [batch, length, d_emb]
-        # traj_emb_t, hidden_state = self.traj_encoder(
-        #     tstep_emb, time_idxs=time_idxs, hidden_state=hidden_state
-        # )
+        traj_emb_t, hidden_state = self.traj_encoder(
+            tstep_emb, time_idxs=time_idxs,
+        )
         traj_encoder_input = (tstep_emb, time_idxs)
         dynamic_shapes = {
             "seq": {0: "batch_size", 1: "seq_length"},
@@ -465,9 +465,6 @@ class Agent(nn.Module):
         )
 
         # 3. actor
-        traj_emb_t, hidden_state = self.traj_encoder(
-            tstep_emb, time_idxs=time_idxs
-        )
         # generate action distribution [batch, length, len(self.gammas), d_action]
         action_dists = self.actor(
             traj_emb_t,
