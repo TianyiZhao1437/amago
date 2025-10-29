@@ -732,7 +732,7 @@ class Transformer(nn.Module):
         """
 
         traj_emb = self.preprocess_seq(seq, pos_idxs)
-        if hidden_state is not None:
+        if hidden_state is None:
             # assert not self.training
             # traj_emb = self.inference_forward(traj_emb, hidden_state)
             traj_emb = self.inference_forward(traj_emb)
