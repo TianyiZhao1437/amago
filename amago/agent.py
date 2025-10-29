@@ -448,16 +448,12 @@ class Agent(nn.Module):
         traj_emb_t, hidden_state = self.traj_encoder(
             tstep_emb, time_idxs=time_idxs, hidden_state=hidden_state
         )
-        traj_encoder_input = {
-            'seq': tstep_emb,
-            'time_idxs': time_idxs,
-        }
+        traj_encoder_input = (tstep_emb, time_idxs)
         traj_encoder_onnx = 'traj_encoder.onnx'
         torch.onnx.export(
             self.traj_encoder,
             traj_encoder_input,
             traj_encoder_onnx,
-            opset_version=10,
             do_constant_folding=True,
             input_names=["seq", "time_idxs"],
             output_names=["traj_emb_t", "hidden_state"],
