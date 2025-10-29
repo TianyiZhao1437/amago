@@ -160,6 +160,7 @@ class FFTstepEncoder(TstepEncoder):
         rl2s: torch.Tensor,
         log_dict: Optional[dict] = None,
     ) -> torch.Tensor:
+        print("[ty]FFT:", self.obs_keys)
         if self.hide_rl2s:
             rl2s = rl2s * 0
         flat_obs = self._cat_flattened_obs(obs)
@@ -261,6 +262,7 @@ class CNNTstepEncoder(TstepEncoder):
         rl2s: torch.Tensor,
         log_dict: Optional[dict] = None,
     ) -> torch.Tensor:
+        print("[ty]CNN:", self.obs_key)
         img = obs[self.obs_key].float()
         B, L, *_ = img.shape
         if self.using_aug and self.training:

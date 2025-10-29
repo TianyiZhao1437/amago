@@ -14,7 +14,6 @@ import wandb
 import gin
 import gymnasium as gym
 
-from safetensors.torch import save_file
 from amago.loading import Batch, MAGIC_PAD_VAL
 from amago.nets.tstep_encoders import TstepEncoder
 from amago.nets.traj_encoders import TrajEncoder
@@ -133,6 +132,7 @@ class AgentModel(nn.Module):
         traj_encoder,
         actor,
     ):
+        super().__init__()
         self.tstep_encoder = tstep_encoder
         self.traj_encoder = traj_encoder
         self.actor = actor
@@ -438,34 +438,34 @@ class Agent(nn.Module):
                 - Updated hidden state of the TrajEncoder.
         """
 
-        # tstep_emb = self.tstep_encoder(obs=obs, rl2s=rl2s)
-        # # sequence model embedding [batch, length, d_emb]
-        # traj_emb_t, hidden_state = self.traj_encoder(
-        #     tstep_emb, time_idxs=time_idxs, hidden_state=hidden_state
-        # )
-        # # generate action distribution [batch, length, len(self.gammas), d_action]
-        # action_dists = self.actor(
-        #     traj_emb_t,
-        #     straight_from_obs={k: obs[k] for k in self.pass_obs_keys_to_actor},
-        # )
-        # if sample:
-        #     actions = action_dists.sample()
-        # else:
-        #     if self.discrete:
-        #         actions = torch.argmax(action_dists.probs, dim=-1, keepdim=True)
-        #     else:
-        #         actions = action_dists.mean
-        # # get intended gamma distribution (always in -1 idx)
-        # actions = actions[..., -1, :]
-
-        # replace with agent model
-        actions, hidden_state = self.agent_model(
-            numbers=obs['numbers'],
-            text_tokens=obs['text_tokens'],
-            illegal_actions=obs['illegal_actions'],
-            rl2s=rl2s,
-            time_idxs=time_idxs,
+        tstep_emb = self.tstep_encoder(obs=obs, rl2s=rl2s)
+        # sequence model embedding [batch, length, d_emb]
+        traj_emb_t, hidden_state = self.traj_encoder(
+            tstep_emb, time_idxs=time_idxs, hidden_state=hidden_state
         )
+        # generate action distribution [batch, length, len(self.gammas), d_action]
+        action_dists = self.actor(
+            traj_emb_t,
+            straight_from_obs={k: obs[k] for k in self.pass_obs_keys_to_actor},
+        )
+        if sample:
+            actions = action_dists.sample()
+        else:
+            if self.discrete:
+                actions = torch.argmax(action_dists.probs, dim=-1, keepdim=True)
+            else:
+                actions = action_dists.mean
+        # get intended gamma distribution (always in -1 idx)
+        actions = actions[..., -1, :]
+
+        # # replace with agent model
+        # actions, hidden_state = self.agent_model(
+        #     numbers=obs['numbers'],
+        #     text_tokens=obs['text_tokens'],
+        #     illegal_actions=obs['illegal_actions'],
+        #     rl2s=rl2s,
+        #     time_idxs=time_idxs,
+        # )
         dtype = torch.uint8 if (self.discrete or self.multibinary) else torch.float32
         return actions.to(dtype=dtype), hidden_state
 
