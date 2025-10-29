@@ -326,6 +326,8 @@ class Agent(nn.Module):
         self.use_target_actor = use_target_actor
         self.max_seq_len = max_seq_len
 
+        print("[ty]tstep_encoder_type=", tstep_encoder_type)
+        print("[ty]traj_encoder_type=", traj_encoder_type)
         self.tstep_encoder = tstep_encoder_type(
             obs_space=obs_space,
             rl2_space=rl2_space,
