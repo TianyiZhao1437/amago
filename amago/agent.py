@@ -400,16 +400,16 @@ class Agent(nn.Module):
         print("[ty]tstep_emb.shape=", tstep_emb.shape)
         print("[ty]time_idxs.shape=", time_idxs.shape)
         batch = torch.export.Dim("batch")
-        seq = torch.export.Dim("seq")
+        seq_len = torch.export.Dim("seq_len")
         dynamic_shapes={
-            'tstep_emb': {0: batch, 1: seq},
-            'time_idxs': {0: batch, 1: seq},
+            'seq': {0: batch, 1: seq_len, 2: 1760},
+            'time_idxs': {0: batch, 1: seq_len, 2: 1},
         }
         torch.onnx.export(
             self.traj_encoder,
             (tstep_emb, time_idxs),
             "traj_encoder.onnx",
-            input_names=["tstep_emb", "time_idxs"],
+            input_names=["seq", "time_idxs"],
             dynamo=True,
             dynamic_shapes=dynamic_shapes,
         )
