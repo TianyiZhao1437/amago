@@ -393,11 +393,9 @@ class TformerTrajEncoder(TrajEncoder):
         self,
         seq: torch.Tensor,
         time_idxs: torch.Tensor,
-        hidden_state: Optional[transformer.TformerHiddenState] = None,
-        log_dict: Optional[dict] = None,
-    ) -> Tuple[torch.Tensor, Optional[transformer.TformerHiddenState]]:
+    ) -> torch.Tensor:
         assert time_idxs is not None
-        return self.tformer(seq, pos_idxs=time_idxs, hidden_state=hidden_state)
+        return self.tformer(seq, pos_idxs=time_idxs)
 
     @property
     def emb_dim(self) -> int:

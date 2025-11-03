@@ -717,7 +717,7 @@ class Transformer(nn.Module):
             seq = layer(seq, *hidden_state[i])
         return self.norm(seq)
 
-    def forward(self, seq, pos_idxs, hidden_state: Optional[TformerHiddenState] = None):
+    def forward(self, seq, pos_idxs):
         """Transformer seq2seq
 
         Args:
@@ -731,11 +731,12 @@ class Transformer(nn.Module):
         """
 
         traj_emb = self.preprocess_seq(seq, pos_idxs)
-        if hidden_state is not None:
-            assert not self.training
-            traj_emb = self.inference_forward(traj_emb, hidden_state)
-            hidden_state.update()
-        else:
-            assert self.training
-            traj_emb = self.training_forward(traj_emb)
-        return traj_emb, hidden_state
+        # if hidden_state is not None:
+        #     assert not self.training
+        #     traj_emb = self.inference_forward(traj_emb, hidden_state)
+        #     hidden_state.update()
+        # else:
+        #     assert self.training
+        #     traj_emb = self.training_forward(traj_emb)
+        traj_emb = self.training_forward(traj_emb)
+        return traj_emb

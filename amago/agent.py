@@ -392,8 +392,26 @@ class Agent(nn.Module):
         """
         tstep_emb = self.tstep_encoder(obs=obs, rl2s=rl2s)
         # sequence model embedding [batch, length, d_emb]
-        traj_emb_t, hidden_state = self.traj_encoder(
-            tstep_emb, time_idxs=time_idxs, hidden_state=hidden_state
+        hidden_state = None
+        traj_emb_t = self.traj_encoder(
+            tstep_emb, time_idxs=time_idxs
+        )
+        # export traj_encoder
+        print("[ty]tstep_emb.shape=", tstep_emb.shape)
+        print("[ty]time_idxs.shape=", time_idxs.shape)
+        batch = torch.export.Dim("batch")
+        seq = torch.export.Dim("seq")
+        dynamic_shapes={
+            'tstep_emb': {0: batch, 1: seq},
+            'time_idxs': {0: batch, 1: seq},
+        }
+        torch.onnx.export(
+            self.traj_encoder,
+            (tstep_emb, time_idxs),
+            "traj_encoder.onnx",
+            input_names=["tstep_emb", "time_idxs"],
+            dynamo=True,
+            dynamic_shapes=dynamic_shapes,
         )
         # generate action distribution [batch, length, len(self.gammas), d_action]
         action_dists = self.actor(
