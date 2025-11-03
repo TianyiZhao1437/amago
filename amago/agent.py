@@ -403,12 +403,12 @@ class Agent(nn.Module):
             'seq': {0: batch, 1: seq_len, 2: 1760},
             'time_idxs': {0: batch, 1: seq_len, 2: 1},
         }
-        torch.export.export(
+        traj_encoder_exported_mod = torch.export.export(
             self.traj_encoder,
             (tstep_emb, time_idxs),
-            "traj_encoder.pt",
             dynamic_shapes=dynamic_shapes,
         )
+        print(traj_encoder_exported_mod)
         # torch.onnx.export(
         #     self.traj_encoder,
         #     (tstep_emb, time_idxs),
