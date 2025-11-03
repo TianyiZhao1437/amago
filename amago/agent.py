@@ -393,28 +393,25 @@ class Agent(nn.Module):
         tstep_emb = self.tstep_encoder(obs=obs, rl2s=rl2s)
         # sequence model embedding [batch, length, d_emb]
         hidden_state = None
-        traj_emb_t = self.traj_encoder(
-            tstep_emb, time_idxs=time_idxs
-        )
+        # traj_emb_t = self.traj_encoder(
+        #     tstep_emb, time_idxs=time_idxs
+        # )
         # export traj_encoder
         # prepare inputs
         fake_tstep_emb = torch.randn(1, 1, 1760).to("cuda")
         fake_time_idxs = torch.zeros(1, 1, 1).to("cuda")
-        fake_inputs = {
-            'seq': fake_tstep_emb,
-            'time_idxs': fake_time_idxs
-        }
+        fake_inputs = (fake_tstep_emb, fake_time_idxs)
         batch = torch.export.Dim("batch")
         seq_len = torch.export.Dim("seq_len")
         dynamic_shapes={
-            'seq': {0: batch, 1: seq_len, 2: 1760},
-            'time_idxs': {0: batch, 1: seq_len, 2: 1},
+            'seq': {0: batch, 1: seq_len},
+            'time_idxs': {0: batch, 1: seq_len},
         }
 
         # run export
         traj_encoder_exported_mod = torch.export.export(
             self.traj_encoder,
-            fake_inputs,
+            args=fake_inputs,
             dynamic_shapes=dynamic_shapes,
         )
         print(traj_encoder_exported_mod)
