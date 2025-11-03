@@ -398,8 +398,8 @@ class Agent(nn.Module):
         # )
         # export traj_encoder
         # prepare inputs
-        fake_tstep_emb = torch.randn(1, 1, 1760).to("cpu")
-        fake_time_idxs = torch.zeros(1, 1, 1).to("cpu")
+        fake_tstep_emb = torch.randn(1, 1, 1760).to("cuda")
+        fake_time_idxs = torch.zeros(1, 1, 1).to("cuda")
         fake_inputs = (fake_tstep_emb, fake_time_idxs)
         batch = torch.export.Dim("batch")
         seq_len = torch.export.Dim("seq_len")
@@ -409,12 +409,13 @@ class Agent(nn.Module):
         }
 
         # run export
-        traj_encoder_exported_mod = torch.export.export(
-            self.traj_encoder,
-            args=fake_inputs,
-            dynamic_shapes=dynamic_shapes,
-        )
-        print(traj_encoder_exported_mod)
+        with torch.inference_mode():
+            traj_encoder_exported_mod = torch.export.export(
+                self.traj_encoder,
+                args=fake_inputs,
+                dynamic_shapes=dynamic_shapes,
+            )
+            print(traj_encoder_exported_mod)
         # torch.onnx.export(
         #     self.traj_encoder,
         #     (tstep_emb, time_idxs),
