@@ -738,5 +738,7 @@ class Transformer(nn.Module):
         # else:
         #     assert self.training
         #     traj_emb = self.training_forward(traj_emb)
-        traj_emb = self.training_forward(traj_emb)
-        return traj_emb
+        # return traj_emb
+        for layer in self.layers:
+            traj_emb = layer(traj_emb)
+        return self.norm(traj_emb)
