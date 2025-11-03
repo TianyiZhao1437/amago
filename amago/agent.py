@@ -404,8 +404,8 @@ class Agent(nn.Module):
             'seq': {0: batch, 1: seq_len, 2: 1760},
             'time_idxs': {0: batch, 1: seq_len, 2: 1},
         }
-        fake_tstep_emb = torch.randn(1, 1, 1760)
-        fake_time_idxs = torch.zeros(1, 1, 1)
+        fake_tstep_emb = torch.randn(1, 1, 1760).to("cuda")
+        fake_time_idxs = torch.zeros(1, 1, 1).to("cuda")
         # run export
         traj_encoder_exported_mod = torch.export.export(
             self.traj_encoder,
