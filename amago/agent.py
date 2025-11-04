@@ -402,17 +402,13 @@ class Agent(nn.Module):
         fake_time_idxs = torch.zeros(1, 1, 1).to("cuda")
         fake_inputs = (fake_tstep_emb, fake_time_idxs)
         # run export
-        traj_encoder_exported_mod = torch.export.export(
+        torch.onnx.export(
             self.traj_encoder,
-            args=fake_inputs,
+            fake_inputs,
+            "traj_encoder.onnx",
+            input_names=["seq", "time_idxs"],
         )
-        print(traj_encoder_exported_mod)
-        # torch.onnx.export(
-        #     self.traj_encoder,
-        #     (fake_tstep_emb, fake_time_idxs),
-        #     "traj_encoder.onnx",
-        #     input_names=["seq", "time_idxs"],
-        # )
+
         # generate action distribution [batch, length, len(self.gammas), d_action]
         action_dists = self.actor(
             traj_emb_t,
