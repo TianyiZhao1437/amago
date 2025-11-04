@@ -397,8 +397,20 @@ class Agent(nn.Module):
         numbers = obs["numbers"]
         print("[ty]text_tokens.shape=", text_tokens.shape)
         print("[ty]numbers.shape=", numbers.shape)
+        print("[ty]rl2s.shape=", rl2s.shape)
         tstep_emb = self.tstep_encoder(text_tokens=text_tokens, numbers=numbers, rl2s=rl2s)
-        # sequence model embedding [batch, length, d_emb]
+        # # export tstep_encoder
+        # fake_text_tokens = torch.randn(1, 1, 87).to("cuda")
+        # fake_numbers = torch.zeros(1, 1, 48).to("cuda")
+        # fake_rl2s = torch.zeros(1, 1, 48).to("cuda")
+        # fake_inputs = (fake_text_tokens, fake_numbers, fake_rl2s)
+        # torch.onnx.export(
+        #     self.tstep_encoder,
+        #     fake_inputs,
+        #     "tstep_encoder.onnx",
+        #     input_names=["text_tokens", "numbers", "rl2s"],
+        # )
+
         hidden_state = None
         traj_emb_t = self.traj_encoder(
             tstep_emb, time_idxs=time_idxs
@@ -408,7 +420,6 @@ class Agent(nn.Module):
         # fake_tstep_emb = torch.randn(1, 1, 1760).to("cuda")
         # fake_time_idxs = torch.zeros(1, 1, 1).to("cuda")
         # fake_inputs = (fake_tstep_emb, fake_time_idxs)
-        # # run export
         # torch.onnx.export(
         #     self.traj_encoder,
         #     fake_inputs,
