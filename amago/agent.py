@@ -285,6 +285,9 @@ class Agent(nn.Module):
         self.tau = tau
         self.use_target_actor = use_target_actor
         self.max_seq_len = max_seq_len
+        print("[ty]tstep_encoder_type=", tstep_encoder_type)
+        print("[ty]traj_encoder_type=", traj_encoder_type)
+        print("[ty]actor_type=", actor_type)
 
         self.tstep_encoder = tstep_encoder_type(
             obs_space=obs_space,
@@ -393,21 +396,21 @@ class Agent(nn.Module):
         tstep_emb = self.tstep_encoder(obs=obs, rl2s=rl2s)
         # sequence model embedding [batch, length, d_emb]
         hidden_state = None
-        # traj_emb_t = self.traj_encoder(
-        #     tstep_emb, time_idxs=time_idxs
-        # )
-        # export traj_encoder
-        # prepare inputs
-        fake_tstep_emb = torch.randn(1, 1, 1760).to("cuda")
-        fake_time_idxs = torch.zeros(1, 1, 1).to("cuda")
-        fake_inputs = (fake_tstep_emb, fake_time_idxs)
-        # run export
-        torch.onnx.export(
-            self.traj_encoder,
-            fake_inputs,
-            "traj_encoder.onnx",
-            input_names=["seq", "time_idxs"],
+        traj_emb_t = self.traj_encoder(
+            tstep_emb, time_idxs=time_idxs
         )
+        # export traj_encoder
+        # # prepare inputs
+        # fake_tstep_emb = torch.randn(1, 1, 1760).to("cuda")
+        # fake_time_idxs = torch.zeros(1, 1, 1).to("cuda")
+        # fake_inputs = (fake_tstep_emb, fake_time_idxs)
+        # # run export
+        # torch.onnx.export(
+        #     self.traj_encoder,
+        #     fake_inputs,
+        #     "traj_encoder.onnx",
+        #     input_names=["seq", "time_idxs"],
+        # )
 
         # generate action distribution [batch, length, len(self.gammas), d_action]
         action_dists = self.actor(
