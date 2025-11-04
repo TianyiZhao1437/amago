@@ -401,25 +401,17 @@ class Agent(nn.Module):
         fake_tstep_emb = torch.randn(1, 1, 1760).to("cuda")
         fake_time_idxs = torch.zeros(1, 1, 1).to("cuda")
         fake_inputs = (fake_tstep_emb, fake_time_idxs)
-        seq_len = torch.export.Dim("seq_len")
-        dynamic_shapes={
-            'seq': {1: seq_len},
-            'time_idxs': {1: seq_len},
-        }
         # run export
         traj_encoder_exported_mod = torch.export.export(
             self.traj_encoder,
             args=fake_inputs,
-            dynamic_shapes=dynamic_shapes,
         )
         print(traj_encoder_exported_mod)
         # torch.onnx.export(
         #     self.traj_encoder,
-        #     (tstep_emb, time_idxs),
+        #     (fake_tstep_emb, fake_time_idxs),
         #     "traj_encoder.onnx",
         #     input_names=["seq", "time_idxs"],
-        #     dynamo=True,
-        #     dynamic_shapes=dynamic_shapes,
         # )
         # generate action distribution [batch, length, len(self.gammas), d_action]
         action_dists = self.actor(
