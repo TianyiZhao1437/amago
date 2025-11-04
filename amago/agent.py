@@ -393,23 +393,20 @@ class Agent(nn.Module):
                   ("test-time") discount factor* `Agent.gamma`.
                 - Updated hidden state of the TrajEncoder.
         """
-        text_tokens = obs["text_tokens"]
-        numbers = obs["numbers"]
-        print("[ty]text_tokens.shape=", text_tokens.shape)
-        print("[ty]numbers.shape=", numbers.shape)
-        print("[ty]rl2s.shape=", rl2s.shape)
-        tstep_emb = self.tstep_encoder(text_tokens=text_tokens, numbers=numbers, rl2s=rl2s)
-        # # export tstep_encoder
-        # fake_text_tokens = torch.randn(1, 1, 87).to("cuda")
-        # fake_numbers = torch.zeros(1, 1, 48).to("cuda")
-        # fake_rl2s = torch.zeros(1, 1, 48).to("cuda")
-        # fake_inputs = (fake_text_tokens, fake_numbers, fake_rl2s)
-        # torch.onnx.export(
-        #     self.tstep_encoder,
-        #     fake_inputs,
-        #     "tstep_encoder.onnx",
-        #     input_names=["text_tokens", "numbers", "rl2s"],
-        # )
+        # text_tokens = obs["text_tokens"]
+        # numbers = obs["numbers"]
+        # tstep_emb = self.tstep_encoder(text_tokens=text_tokens, numbers=numbers, rl2s=rl2s)
+        # export tstep_encoder
+        fake_text_tokens = torch.randn(1, 1, 87).to("cuda")
+        fake_numbers = torch.zeros(1, 1, 48).to("cuda")
+        fake_rl2s = torch.zeros(1, 1, 10).to("cuda")
+        fake_inputs = (fake_text_tokens, fake_numbers, fake_rl2s)
+        torch.onnx.export(
+            self.tstep_encoder,
+            fake_inputs,
+            "tstep_encoder.onnx",
+            input_names=["text_tokens", "numbers", "rl2s"],
+        )
 
         hidden_state = None
         traj_emb_t = self.traj_encoder(
