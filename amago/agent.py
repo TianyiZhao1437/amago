@@ -424,13 +424,21 @@ class Agent(nn.Module):
         # )
 
         # generate action distribution [batch, length, len(self.gammas), d_action]
-        state = traj_emb_t
-        illegal_actions = obs["illegal_actions"]
-        print("[ty]state.shape=", state.shape)
-        print("[ty]illegal_actions.shape=", illegal_actions.shape)
-        action_dists = self.actor(
-            state=state,
-            illegal_actions=illegal_actions,
+        # state = traj_emb_t
+        # illegal_actions = obs["illegal_actions"]
+        # action_dists = self.actor(
+        #     state=state,
+        #     illegal_actions=illegal_actions,
+        # )
+        # export actor
+        fake_state = torch.randn(1, 1, 1280).to("cuda")
+        fake_illegal_actions = torch.zeros(1, 1, 9).to("cuda")
+        fake_inputs = (fake_state, fake_illegal_actions)
+        torch.onnx.export(
+            self.actor,
+            fake_inputs,
+            "actor.onnx",
+            input_names=["state", "illegal_actions"],
         )
         if sample:
             actions = action_dists.sample()

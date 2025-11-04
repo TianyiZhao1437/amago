@@ -78,8 +78,7 @@ class BaseActorHead(nn.Module, ABC):
     def actor_network_forward(
         self,
         state: torch.Tensor,
-        log_dict: Optional[dict] = None,
-        straight_from_obs: Optional[dict[str, torch.Tensor]] = None,
+        illegal_actions: torch.Tensor,
     ) -> torch.Tensor:
         raise NotImplementedError
 
