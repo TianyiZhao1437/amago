@@ -401,13 +401,11 @@ class Agent(nn.Module):
         fake_tstep_emb = torch.randn(1, 1, 1760).to("cuda")
         fake_time_idxs = torch.zeros(1, 1, 1).to("cuda")
         fake_inputs = (fake_tstep_emb, fake_time_idxs)
-        batch = torch.export.Dim("batch")
         seq_len = torch.export.Dim("seq_len")
         dynamic_shapes={
-            'seq': {0: batch, 1: seq_len},
-            'time_idxs': {0: batch, 1: seq_len},
+            'seq': {1: seq_len},
+            'time_idxs': {1: seq_len},
         }
-        print("[ty]fake_tstep_emb=", fake_tstep_emb)
         # run export
         traj_encoder_exported_mod = torch.export.export(
             self.traj_encoder,
