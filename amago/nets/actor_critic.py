@@ -137,8 +137,7 @@ class Actor(BaseActorHead):
     def actor_network_forward(
         self,
         state: torch.Tensor,
-        log_dict: Optional[dict] = None,
-        straight_from_obs: Optional[dict[str, torch.Tensor]] = None,
+        illegal_actions: torch.Tensor,
     ) -> torch.Tensor:
         dist_params = self.base(state)
         dist_params = rearrange(
@@ -225,7 +224,7 @@ class ResidualActor(BaseActorHead):
             feature_dim, self.policy_dist.input_dimension * self.num_gammas
         )
 
-    @torch.compile
+    # @torch.compile
     def actor_network_forward(
         self,
         state: torch.Tensor,
@@ -392,7 +391,7 @@ class NCritics(BaseCriticHead):
     def __len__(self):
         return self.num_critics
 
-    @torch.compile
+    # @torch.compile
     def critic_network_forward(
         self, state: torch.Tensor, action: torch.Tensor, log_dict: Optional[dict] = None
     ) -> torch.Tensor:
@@ -518,7 +517,7 @@ class NCriticsTwoHot(BaseCriticHead):
     def __len__(self):
         return self.num_critics
 
-    @torch.compile
+    # @torch.compile
     def critic_network_forward(
         self, state: torch.Tensor, action: torch.Tensor, log_dict: Optional[dict] = None
     ) -> pyd.Categorical:

@@ -393,27 +393,26 @@ class Agent(nn.Module):
                   ("test-time") discount factor* `Agent.gamma`.
                 - Updated hidden state of the TrajEncoder.
         """
-        # text_tokens = obs["text_tokens"]
-        # numbers = obs["numbers"]
-        # tstep_emb = self.tstep_encoder(text_tokens=text_tokens, numbers=numbers, rl2s=rl2s)
-        # export tstep_encoder
-        fake_text_tokens = torch.randn(1, 1, 87).to("cuda")
-        fake_numbers = torch.zeros(1, 1, 48).to("cuda")
-        fake_rl2s = torch.zeros(1, 1, 10).to("cuda")
-        fake_inputs = (fake_text_tokens, fake_numbers, fake_rl2s)
-        torch.onnx.export(
-            self.tstep_encoder,
-            fake_inputs,
-            "tstep_encoder.onnx",
-            input_names=["text_tokens", "numbers", "rl2s"],
-        )
+        text_tokens = obs["text_tokens"]
+        numbers = obs["numbers"]
+        tstep_emb = self.tstep_encoder(text_tokens=text_tokens, numbers=numbers, rl2s=rl2s)
+        # # export tstep_encoder
+        # fake_text_tokens = torch.randn(1, 1, 87).to("cuda")
+        # fake_numbers = torch.zeros(1, 1, 48).to("cuda")
+        # fake_rl2s = torch.zeros(1, 1, 10).to("cuda")
+        # fake_inputs = (fake_text_tokens, fake_numbers, fake_rl2s)
+        # torch.onnx.export(
+        #     self.tstep_encoder,
+        #     fake_inputs,
+        #     "tstep_encoder.onnx",
+        #     input_names=["text_tokens", "numbers", "rl2s"],
+        # )
 
         hidden_state = None
         traj_emb_t = self.traj_encoder(
             tstep_emb, time_idxs=time_idxs
         )
-        # export traj_encoder
-        # # prepare inputs
+        # # export traj_encoder
         # fake_tstep_emb = torch.randn(1, 1, 1760).to("cuda")
         # fake_time_idxs = torch.zeros(1, 1, 1).to("cuda")
         # fake_inputs = (fake_tstep_emb, fake_time_idxs)
@@ -425,9 +424,13 @@ class Agent(nn.Module):
         # )
 
         # generate action distribution [batch, length, len(self.gammas), d_action]
+        state = traj_emb_t
+        illegal_actions = obs["illegal_actions"]
+        print("[ty]state.shape=", state.shape)
+        print("[ty]illegal_actions.shape=", illegal_actions.shape)
         action_dists = self.actor(
-            traj_emb_t,
-            straight_from_obs={k: obs[k] for k in self.pass_obs_keys_to_actor},
+            state=state,
+            illegal_actions=illegal_actions,
         )
         if sample:
             actions = action_dists.sample()
