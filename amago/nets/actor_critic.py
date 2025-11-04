@@ -51,8 +51,7 @@ class BaseActorHead(nn.Module, ABC):
     def forward(
         self,
         state: torch.Tensor,
-        log_dict: Optional[dict] = None,
-        straight_from_obs: Optional[dict[str, torch.Tensor]] = None,
+        illegal_actions: torch.Tensor,
     ) -> pyd.Distribution:
         """Compute an action distribution from a state representation.
 
@@ -65,14 +64,14 @@ class BaseActorHead(nn.Module, ABC):
             where sampled actions would have shape (Batch, Length, Gammas, action_dim).
         """
         dist_params = self.actor_network_forward(
-            state=state, log_dict=log_dict, straight_from_obs=straight_from_obs
+            state=state, illegal_actions=illegal_actions,
         )
         assert dist_params.ndim == 4
         assert dist_params.shape[-2:] == (
             self.num_gammas,
             self.policy_dist.input_dimension,
         )
-        return self.policy_dist(dist_params, log_dict=log_dict)
+        return self.policy_dist(dist_params, log_dict=None)
 
     @abstractmethod
     def actor_network_forward(
