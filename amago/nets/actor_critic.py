@@ -52,7 +52,7 @@ class BaseActorHead(nn.Module, ABC):
         self,
         state: torch.Tensor,
         illegal_actions: torch.Tensor,
-    ) -> pyd.Distribution:
+    ) -> torch.Tensor:
         """Compute an action distribution from a state representation.
 
         Args:
@@ -71,7 +71,10 @@ class BaseActorHead(nn.Module, ABC):
             self.num_gammas,
             self.policy_dist.input_dimension,
         )
-        return self.policy_dist(dist_params, log_dict=None)
+        action_dists = self.policy_dist(dist_params, log_dict=None)
+        actions = torch.argmax(action_dists.probs, dim=-1, keepdim=True)
+        actions = actions[..., -1, :]
+        return actions
 
     @abstractmethod
     def actor_network_forward(
