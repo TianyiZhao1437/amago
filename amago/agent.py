@@ -393,7 +393,11 @@ class Agent(nn.Module):
                   ("test-time") discount factor* `Agent.gamma`.
                 - Updated hidden state of the TrajEncoder.
         """
-        tstep_emb = self.tstep_encoder(obs=obs, rl2s=rl2s)
+        text_tokens = obs["text_tokens"]
+        numbers = obs["numbers"]
+        print("[ty]text_tokens.shape=", text_tokens.shape)
+        print("[ty]numbers.shape=", numbers.shape)
+        tstep_emb = self.tstep_encoder(text_tokens=text_tokens, numbers=numbers, rl2s=rl2s)
         # sequence model embedding [batch, length, d_emb]
         hidden_state = None
         traj_emb_t = self.traj_encoder(

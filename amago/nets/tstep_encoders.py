@@ -42,21 +42,21 @@ class TstepEncoder(nn.Module, ABC):
 
     def forward(
         self,
-        obs: dict[str, torch.Tensor],
+        text_tokens: torch.Tensor,
+        numbers: torch.Tensor,
         rl2s: torch.Tensor,
-        log_dict: Optional[dict] = None,
     ) -> torch.Tensor:
         # outsources customization to inner_forward to maintain control
         # over future hidden state compatibility.
-        out = self.inner_forward(obs, rl2s, log_dict=log_dict)
+        out = self.inner_forward(text_tokens, numbers, rl2s)
         return out
 
     @abstractmethod
     def inner_forward(
         self,
-        obs: dict[str, torch.Tensor],
+        text_tokens: torch.Tensor,
+        numbers: torch.Tensor,
         rl2s: torch.Tensor,
-        log_dict: Optional[dict] = None,
     ) -> torch.Tensor:
         """Override to implement the network forward pass.
         Args:
