@@ -407,15 +407,14 @@ class Agent(nn.Module):
             'seq': {0: batch, 1: seq_len},
             'time_idxs': {0: batch, 1: seq_len},
         }
-
+        print("[ty]fake_tstep_emb=", fake_tstep_emb)
         # run export
-        with torch.inference_mode():
-            traj_encoder_exported_mod = torch.export.export(
-                self.traj_encoder,
-                args=fake_inputs,
-                dynamic_shapes=dynamic_shapes,
-            )
-            print(traj_encoder_exported_mod)
+        traj_encoder_exported_mod = torch.export.export(
+            self.traj_encoder,
+            args=fake_inputs,
+            dynamic_shapes=dynamic_shapes,
+        )
+        print(traj_encoder_exported_mod)
         # torch.onnx.export(
         #     self.traj_encoder,
         #     (tstep_emb, time_idxs),

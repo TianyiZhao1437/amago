@@ -89,7 +89,7 @@ class VanillaAttention(SelfAttention):
         self.dropout = nn.Dropout(self.dropout)
         self._mask = None
 
-    @torch.compile
+    # @torch.compile
     def _inference_with_cache(self, qkv, key_cache, val_cache, cache_seqlens):
         # fmt: off
         queries, keys, values = torch.unbind(qkv, dim=2)
@@ -114,7 +114,7 @@ class VanillaAttention(SelfAttention):
         # fmt: on
         return V
 
-    @torch.compile
+    # @torch.compile
     def _forward_without_cache(self, qkv, mask):
         queries, keys, values = torch.unbind(qkv, dim=2)
         B, L, H, E = queries.shape
@@ -127,7 +127,7 @@ class VanillaAttention(SelfAttention):
         V = torch.einsum("bhls,bshd->blhd", A, values)
         return V
 
-    @torch.compiler.disable
+    # @torch.compiler.disable
     def forward(self, qkv, key_cache=None, val_cache=None, cache_seqlens=None):
         if key_cache is None and val_cache is None or cache_seqlens is None:
             B, L, *_ = qkv.shape
@@ -165,7 +165,7 @@ class FlashAttention(SelfAttention):
         super().__init__(causal=causal, dropout=dropout)
         self.window_size = window_size
 
-    @torch.compiler.disable
+    # @torch.compiler.disable
     def forward(self, qkv, key_cache=None, val_cache=None, cache_seqlens=None):
         qkv = qkv.to(torch.bfloat16)
         if key_cache is None or val_cache is None or cache_seqlens is None:
@@ -263,17 +263,17 @@ class FlexAttention(SelfAttention):
 
         return _kv_cache_mask_mod
 
-    @torch.compile
+    # @torch.compile
     def flex_attention(self, q, k, v, score_mod, block_mask):
         return flex_attention(q, k, v, score_mod, block_mask)
 
-    @torch.compile
+    # @torch.compile
     def flex_attention_inf(self, q, k, v, score_mod, block_mask):
         # pretend this is a different function than training to keep
         # torch's compilation separate.
         return flex_attention(q, k, v, score_mod, block_mask)
 
-    @torch.compiler.disable
+    # @torch.compiler.disable
     def forward(self, qkv, key_cache=None, val_cache=None, cache_seqlens=None):
         if key_cache is None or val_cache is None or cache_seqlens is None:
             assert self.training
@@ -537,7 +537,7 @@ class TransformerLayer(nn.Module):
         self.activation = activation_switch(activation)
         self.d_model = d_model
 
-    @torch.compile
+    # @torch.compile
     def forward(self, self_seq, key_cache=None, val_cache=None, cache_seqlens=None):
         q1 = self.norm1(self_seq)  # pre-norm
         q1 = self.attention_layer(
@@ -706,7 +706,7 @@ class Transformer(nn.Module):
         traj_emb = self.dropout(traj_emb + pos_emb)
         return traj_emb
 
-    @torch.compile
+    # @torch.compile
     def training_forward(self, seq):
         for layer in self.layers:
             seq = layer(seq)
