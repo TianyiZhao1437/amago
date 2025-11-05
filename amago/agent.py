@@ -393,35 +393,35 @@ class Agent(nn.Module):
                   ("test-time") discount factor* `Agent.gamma`.
                 - Updated hidden state of the TrajEncoder.
         """
-        text_tokens = obs["text_tokens"]
-        numbers = obs["numbers"]
-        tstep_emb = self.tstep_encoder(text_tokens=text_tokens, numbers=numbers, rl2s=rl2s)
-        # # export tstep_encoder
-        # fake_text_tokens = torch.randint(0, 1000, (1, 1, 87)).to("cuda")
-        # fake_numbers = torch.zeros(1, 1, 48).to("cuda")
-        # fake_rl2s = torch.zeros(1, 1, 10).to("cuda")
-        # fake_inputs = (fake_text_tokens, fake_numbers, fake_rl2s)
-        # torch.onnx.export(
-        #     self.tstep_encoder,
-        #     fake_inputs,
-        #     "tstep_encoder.onnx",
-        #     input_names=["text_tokens", "numbers", "rl2s"],
-        # )
-
-        # hidden_state = None
-        # traj_emb_t = self.traj_encoder(
-        #     tstep_emb, time_idxs=time_idxs
-        # )
-        # export traj_encoder
-        fake_tstep_emb = torch.randn(1, 1, 1760).to("cuda")
-        fake_time_idxs = torch.zeros(1, 1, 1).to(torch.int64).to("cuda")
-        fake_inputs = (fake_tstep_emb, fake_time_idxs)
+        # text_tokens = obs["text_tokens"]
+        # numbers = obs["numbers"]
+        # tstep_emb = self.tstep_encoder(text_tokens=text_tokens, numbers=numbers, rl2s=rl2s)
+        # export tstep_encoder
+        fake_text_tokens = torch.randint(0, 1000, (1, 1, 87)).to(torch.int32).to("cuda")
+        fake_numbers = torch.zeros(1, 1, 48).to("cuda")
+        fake_rl2s = torch.zeros(1, 1, 10).to("cuda")
+        fake_inputs = (fake_text_tokens, fake_numbers, fake_rl2s)
         torch.onnx.export(
-            self.traj_encoder,
+            self.tstep_encoder,
             fake_inputs,
-            "traj_encoder.onnx",
-            input_names=["seq", "time_idxs"],
+            "tstep_encoder.onnx",
+            input_names=["text_tokens", "numbers", "rl2s"],
         )
+
+        hidden_state = None
+        traj_emb_t = self.traj_encoder(
+            tstep_emb, time_idxs=time_idxs
+        )
+        # # export traj_encoder
+        # fake_tstep_emb = torch.randn(1, 1, 1760).to("cuda")
+        # fake_time_idxs = torch.zeros(1, 1, 1).to(torch.int64).to("cuda")
+        # fake_inputs = (fake_tstep_emb, fake_time_idxs)
+        # torch.onnx.export(
+        #     self.traj_encoder,
+        #     fake_inputs,
+        #     "traj_encoder.onnx",
+        #     input_names=["seq", "time_idxs"],
+        # )
 
         # generate action distribution [batch, length, len(self.gammas), d_action]
         state = traj_emb_t
