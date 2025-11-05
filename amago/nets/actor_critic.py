@@ -74,7 +74,7 @@ class BaseActorHead(nn.Module, ABC):
         action_dists = self.policy_dist(dist_params, log_dict=None)
         actions = torch.argmax(action_dists.probs, dim=-1, keepdim=True)
         actions = actions[..., -1, :]
-        return actions
+        return actions, action_dists.probs
 
     @abstractmethod
     def actor_network_forward(
