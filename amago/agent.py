@@ -393,20 +393,20 @@ class Agent(nn.Module):
                   ("test-time") discount factor* `Agent.gamma`.
                 - Updated hidden state of the TrajEncoder.
         """
-        text_tokens = obs["text_tokens"]
-        numbers = obs["numbers"]
-        tstep_emb = self.tstep_encoder(text_tokens=text_tokens, numbers=numbers, rl2s=rl2s)
-        # # export tstep_encoder
-        # fake_text_tokens = torch.randn(1, 1, 87).to("cuda")
-        # fake_numbers = torch.zeros(1, 1, 48).to("cuda")
-        # fake_rl2s = torch.zeros(1, 1, 10).to("cuda")
-        # fake_inputs = (fake_text_tokens, fake_numbers, fake_rl2s)
-        # torch.onnx.export(
-        #     self.tstep_encoder,
-        #     fake_inputs,
-        #     "tstep_encoder.onnx",
-        #     input_names=["text_tokens", "numbers", "rl2s"],
-        # )
+        # text_tokens = obs["text_tokens"]
+        # numbers = obs["numbers"]
+        # tstep_emb = self.tstep_encoder(text_tokens=text_tokens, numbers=numbers, rl2s=rl2s)
+        # export tstep_encoder
+        fake_text_tokens = torch.randn(1, 1, 87).to("cuda")
+        fake_numbers = torch.zeros(1, 1, 48).to("cuda")
+        fake_rl2s = torch.zeros(1, 1, 10).to("cuda")
+        fake_inputs = (fake_text_tokens, fake_numbers, fake_rl2s)
+        torch.onnx.export(
+            self.tstep_encoder,
+            fake_inputs,
+            "tstep_encoder.onnx",
+            input_names=["text_tokens", "numbers", "rl2s"],
+        )
 
         hidden_state = None
         traj_emb_t = self.traj_encoder(
@@ -441,16 +441,16 @@ class Agent(nn.Module):
         # # get intended gamma distribution (always in -1 idx)
         # actions = actions[..., -1, :]
 
-        # export actor
-        fake_state = torch.randn(1, 1, 1280).to("cuda")
-        fake_illegal_actions = torch.zeros(1, 1, 9).to("cuda")
-        fake_inputs = (fake_state, fake_illegal_actions)
-        torch.onnx.export(
-            self.actor,
-            fake_inputs,
-            "actor.onnx",
-            input_names=["state", "illegal_actions"],
-        )
+        # # export actor
+        # fake_state = torch.randn(1, 1, 1280).to("cuda")
+        # fake_illegal_actions = torch.zeros(1, 1, 9).to("cuda")
+        # fake_inputs = (fake_state, fake_illegal_actions)
+        # torch.onnx.export(
+        #     self.actor,
+        #     fake_inputs,
+        #     "actor.onnx",
+        #     input_names=["state", "illegal_actions"],
+        # )
         dtype = torch.uint8 if (self.discrete or self.multibinary) else torch.float32
         return actions.to(dtype=dtype), hidden_state
 
