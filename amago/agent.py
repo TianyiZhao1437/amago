@@ -397,7 +397,7 @@ class Agent(nn.Module):
         # numbers = obs["numbers"]
         # tstep_emb = self.tstep_encoder(text_tokens=text_tokens, numbers=numbers, rl2s=rl2s)
         # export tstep_encoder
-        fake_text_tokens = torch.randn(1, 1, 87).to("cuda")
+        fake_text_tokens = torch.randint(0, 1000, (1, 1, 87)).to("cuda")
         fake_numbers = torch.zeros(1, 1, 48).to("cuda")
         fake_rl2s = torch.zeros(1, 1, 10).to("cuda")
         fake_inputs = (fake_text_tokens, fake_numbers, fake_rl2s)
