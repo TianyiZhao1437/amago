@@ -405,6 +405,7 @@ class Agent(nn.Module):
             self.tstep_encoder,
             fake_inputs,
             "tstep_encoder.onnx",
+            external_data=False,
             input_names=["text_tokens", "numbers", "rl2s"],
         )
 
