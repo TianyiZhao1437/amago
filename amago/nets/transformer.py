@@ -101,15 +101,12 @@ class VanillaAttention(SelfAttention):
         key_cache[cache_idxs, cache_seqlens] = keys[:, 0]
         val_cache[cache_idxs, cache_seqlens] = values[:, 0]
         end = cache_seqlens + 1
-        max_len = end.max()
-        # modify here to avoid export error
-        k_cache = torch.nan_to_num(key_cache[:, :max_len])
-        v_cache = torch.nan_to_num(val_cache[:, :max_len])
-        # k_cache = key_cache[:, :max_len]
-        # v_cache = val_cache[:, :max_len]
+        # max_len = end.max()
+        k_cache = torch.nan_to_num(key_cache[:, :end])
+        v_cache = torch.nan_to_num(val_cache[:, :end])
         # attention scores + masking
         scores = scale * torch.einsum("blhe,blhe->blh", queries, k_cache)
-        mask = torch.arange(max_len, device=cache_seqlens.device)[None, :] >= end[:, None]
+        mask = torch.arange(end, device=cache_seqlens.device)[None, :] >= end[:, None]
         scores.masked_fill_(mask[:, :, None], -torch.inf)
         # output
         A = self.dropout(torch.softmax(scores, dim=1))
@@ -745,8 +742,8 @@ class Transformer(nn.Module):
         res_key = None
         res_val = None
         for i, layer in enumerate(self.layers):
-            k_cache = hidden_state[i, :]
-            v_cache = hidden_state[i+8, :]
+            k_cache = hidden_state[i]
+            v_cache = hidden_state[i+9]
             seq = layer(seq, key_cache=k_cache, val_cache=v_cache, cache_seqlens=seq_len)
             if i == 0:
                 res_key = k_cache
