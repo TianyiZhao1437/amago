@@ -409,9 +409,10 @@ class Agent(nn.Module):
         #     input_names=["text_tokens", "numbers", "rl2s"],
         # )
 
-        hidden_state = None
-        traj_emb_t = self.traj_encoder(
-            tstep_emb, time_idxs=time_idxs
+        # hidden_state: concat(k_cache[9, 1, 128, 20, 64], v_cache[9, 1, 128, 20, 64])
+        hidden_state = torch.nan([18, 1, 128, 20, 64]).to(torch.float32).to("cuda")
+        traj_emb_t, hidden_state = self.traj_encoder(
+            tstep_emb, time_idxs=time_idxs, hidden_state=hidden_state,
         )
         # # export traj_encoder
         # fake_tstep_emb = torch.randn(1, 1, 1760).to("cuda")

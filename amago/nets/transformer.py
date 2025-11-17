@@ -717,7 +717,7 @@ class Transformer(nn.Module):
             seq = layer(seq, *hidden_state[i])
         return self.norm(seq)
 
-    def forward(self, seq, pos_idxs):
+    def forward(self, seq, pos_idxs, hidden_state, seq_len):
         """Transformer seq2seq
 
         Args:
@@ -730,7 +730,7 @@ class Transformer(nn.Module):
             The new hidden state of the transformer.
         """
 
-        traj_emb = self.preprocess_seq(seq, pos_idxs)
+        seq = self.preprocess_seq(seq, pos_idxs)
         # if hidden_state is not None:
         #     assert not self.training
         #     traj_emb = self.inference_forward(traj_emb, hidden_state)
@@ -739,6 +739,18 @@ class Transformer(nn.Module):
         #     assert self.training
         #     traj_emb = self.training_forward(traj_emb)
         # return traj_emb
-        for layer in self.layers:
-            traj_emb = layer(traj_emb)
-        return self.norm(traj_emb)
+        res_key = None
+        res_val = None
+        for i, layer in enumerate(self.layers):
+            k_cache = hidden_state[i, :]
+            v_cache = hidden_state[i+8, :]
+            seq = layer(seq, key_cache=k_cache, val_cache=v_cache, cache_seqlens=seq_len)
+            if i == 0:
+                res_key = k_cache
+                res_val = v_cache
+            else:
+                res_key = torch.cat([res_key, k_cache], dim=0)
+                res_val = torch.cat([res_val, v_cache], dim=0)
+        res_hidden_state = torch.cat([res_key, res_val], dim=0)
+        res_seq = self.norm(seq)
+        return res_seq, res_hidden_state
