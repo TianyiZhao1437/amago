@@ -101,7 +101,7 @@ class VanillaAttention(SelfAttention):
         key_cache[cache_idxs, cache_seqlens] = keys[:, 0]
         val_cache[cache_idxs, cache_seqlens] = values[:, 0]
         end = cache_seqlens + 1
-        max_len = end.max()
+        max_len = end.data[0]
         # modify here to avoid export error
         # k_cache = torch.nan_to_num(key_cache[:, :max_len])
         # v_cache = torch.nan_to_num(val_cache[:, :max_len])
