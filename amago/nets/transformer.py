@@ -102,8 +102,11 @@ class VanillaAttention(SelfAttention):
         val_cache[cache_idxs, cache_seqlens] = values[:, 0]
         end = cache_seqlens + 1
         max_len = end.max()
-        k_cache = torch.nan_to_num(key_cache[:, :max_len])
-        v_cache = torch.nan_to_num(val_cache[:, :max_len])
+        # modify here to avoid export error
+        # k_cache = torch.nan_to_num(key_cache[:, :max_len])
+        # v_cache = torch.nan_to_num(val_cache[:, :max_len])
+        k_cache = key_cache[:, :max_len]
+        v_cache = val_cache[:, :max_len]
         # attention scores + masking
         scores = scale * torch.einsum("blhe,blhe->blh", queries, k_cache)
         mask = torch.arange(max_len, device=cache_seqlens.device)[None, :] >= end[:, None]
