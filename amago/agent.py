@@ -426,6 +426,7 @@ class Agent(nn.Module):
             fake_inputs,
             "traj_encoder.onnx",
             external_data=False,
+            strict=False,
             input_names=["seq", "time_idxs", "hidden_state", "seq_len"],
         )
 
