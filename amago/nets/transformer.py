@@ -90,7 +90,7 @@ class VanillaAttention(SelfAttention):
         self._mask = None
 
     # @torch.compile
-    def _inference_with_cache(self, qkv, key_cache, val_cache, cache_seqlens):
+    def _inference_with_cache(self, qkv, key_cache, val_cache, seq_lens: int):
         # fmt: off
         queries, keys, values = torch.unbind(qkv, dim=2)
         B, L, H, E = queries.shape
@@ -98,15 +98,15 @@ class VanillaAttention(SelfAttention):
         scale = 1.0 / math.sqrt(E)
         # fill cache, trim sequences
         cache_idxs = torch.arange(key_cache.shape[0], device=key_cache.device)
-        key_cache[cache_idxs, cache_seqlens] = keys[:, 0]
-        val_cache[cache_idxs, cache_seqlens] = values[:, 0]
-        end = cache_seqlens + 1
+        key_cache[cache_idxs, seq_lens] = keys[:, 0]
+        val_cache[cache_idxs, seq_lens] = values[:, 0]
+        max_len = seq_lens + 1
         # max_len = end.max()
-        k_cache = torch.nan_to_num(key_cache[:, :end])
-        v_cache = torch.nan_to_num(val_cache[:, :end])
+        k_cache = torch.nan_to_num(key_cache[:, :max_len])
+        v_cache = torch.nan_to_num(val_cache[:, :max_len])
         # attention scores + masking
         scores = scale * torch.einsum("blhe,blhe->blh", queries, k_cache)
-        mask = torch.arange(end, device=cache_seqlens.device)[None, :] >= end[:, None]
+        mask = torch.arange(max_len, device=cache_seqlens.device)[None, :] >= end[:, None]
         scores.masked_fill_(mask[:, :, None], -torch.inf)
         # output
         A = self.dropout(torch.softmax(scores, dim=1))
