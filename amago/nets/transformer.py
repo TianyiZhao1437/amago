@@ -102,11 +102,12 @@ class VanillaAttention(SelfAttention):
         val_cache[cache_idxs, seq_lens] = values[:, 0]
         max_len = seq_lens + 1
         # max_len = end.max()
+        end = torch.tensor([max_len]).to("cuda")
         k_cache = torch.nan_to_num(key_cache[:, :max_len])
         v_cache = torch.nan_to_num(val_cache[:, :max_len])
         # attention scores + masking
         scores = scale * torch.einsum("blhe,blhe->blh", queries, k_cache)
-        mask = torch.arange(max_len, device=cache_seqlens.device)[None, :] >= end[:, None]
+        mask = torch.arange(max_len, device="cuda")[None, :] >= end[:, None]
         scores.masked_fill_(mask[:, :, None], -torch.inf)
         # output
         A = self.dropout(torch.softmax(scores, dim=1))
