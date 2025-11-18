@@ -167,9 +167,9 @@ class FlashAttention(SelfAttention):
         self.window_size = window_size
 
     # @torch.compiler.disable
-    def forward(self, qkv, key_cache=None, val_cache=None, cache_seqlens=None):
+    def forward(self, qkv, key_cache=None, val_cache=None, seq_lens=None):
         qkv = qkv.to(torch.bfloat16)
-        if key_cache is None or val_cache is None or cache_seqlens is None:
+        if key_cache is None or val_cache is None or seq_lens is None:
             out = flash_attn_qkvpacked_func(
                 qkv,
                 dropout_p=self.dropout if self.training else 0.0,
@@ -183,7 +183,7 @@ class FlashAttention(SelfAttention):
                 q=q,
                 k_cache=key_cache,
                 v_cache=val_cache,
-                cache_seqlens=cache_seqlens,
+                seq_lens=seq_lens,
                 k=k,
                 v=v,
                 causal=self.causal,
@@ -718,7 +718,7 @@ class Transformer(nn.Module):
             seq = layer(seq, *hidden_state[i])
         return self.norm(seq)
 
-    def forward(self, seq, pos_idxs, hidden_state, seq_len):
+    def forward(self, seq, pos_idxs, hidden_state, seq_lens):
         """Transformer seq2seq
 
         Args:
@@ -745,7 +745,7 @@ class Transformer(nn.Module):
         for i, layer in enumerate(self.layers):
             k_cache = hidden_state[i]
             v_cache = hidden_state[i+9]
-            seq = layer(seq, key_cache=k_cache, val_cache=v_cache, cache_seqlens=seq_len)
+            seq = layer(seq, key_cache=k_cache, val_cache=v_cache, seq_lens=seq_lens)
             if i == 0:
                 res_key = k_cache
                 res_val = v_cache

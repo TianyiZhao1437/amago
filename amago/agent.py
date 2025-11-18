@@ -409,25 +409,27 @@ class Agent(nn.Module):
         #     input_names=["text_tokens", "numbers", "rl2s"],
         # )
 
-        # hidden_state: concat(k_cache[9, 1, 128, 20, 64], v_cache[9, 1, 128, 20, 64])
-        hidden_state = torch.zeros([18, 1, 128, 20, 64]).to(torch.float32).to("cuda")
-        seq_len = 0
-        traj_emb_t, hidden_state = self.traj_encoder(
-            tstep_emb, time_idxs=time_idxs, hidden_state=hidden_state, seq_len=seq_len,
-        )
-        # # export traj_encoder
-        # fake_tstep_emb = torch.randn(1, 1, 1760).to("cuda")
-        # fake_time_idxs = torch.zeros(1, 1, 1).to(torch.int64).to("cuda")
-        # fake_hidden_state = torch.zeros([18, 1, 128, 20, 64]).to(torch.float32).to("cuda")
-        # fake_seq_len = torch.zeros(1).to(torch.int32).to("cuda")
-        # fake_inputs = (fake_tstep_emb, fake_time_idxs, fake_hidden_state, fake_seq_len)
-        # torch.onnx.export(
-        #     self.traj_encoder,
-        #     fake_inputs,
-        #     "traj_encoder.onnx",
-        #     external_data=False,
-        #     input_names=["seq", "time_idxs", "hidden_state", "seq_len"],
+        # # hidden_state: concat(k_cache[9, 1, 128, 20, 64], v_cache[9, 1, 128, 20, 64])
+        # hidden_state = torch.zeros([18, 1, 128, 20, 64]).to(torch.float32).to("cuda")
+        # seq_len = 0
+        # traj_emb_t, hidden_state = self.traj_encoder(
+        #     tstep_emb, time_idxs=time_idxs, hidden_state=hidden_state, seq_len=seq_len,
         # )
+        # export traj_encoder
+        fake_tstep_emb = torch.randn(1, 1, 1760).to("cuda")
+        fake_time_idxs = torch.zeros(1, 1, 1).to(torch.int64).to("cuda")
+        fake_hidden_state = torch.zeros([18, 1, 128, 20, 64]).to(torch.float32).to("cuda")
+        seq_lens = 0
+        fake_kwargs = {"seq_lens": seq_lens}
+        fake_inputs = (fake_tstep_emb, fake_time_idxs, fake_hidden_state)
+        torch.onnx.export(
+            self.traj_encoder,
+            fake_inputs,
+            "traj_encoder.onnx",
+            kwargs=fake_kwargs,
+            external_data=False,
+            input_names=["seq", "time_idxs", "hidden_state"],
+        )
 
         # generate action distribution [batch, length, len(self.gammas), d_action]
         state = traj_emb_t
