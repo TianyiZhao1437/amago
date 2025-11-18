@@ -52,7 +52,7 @@ class SelfAttention(nn.Module, ABC):
         self.dropout = dropout
 
     @abstractmethod
-    def forward(self, qkv, key_cache=None, val_cache=None, cache_seqlens=None):
+    def forward(self, qkv, key_cache=None, val_cache=None, seq_lens=None):
         """Map queries keys and values to attention output.
 
         Should implement full training pass when key_cache/val_cache/cache_seqlens are
@@ -129,8 +129,8 @@ class VanillaAttention(SelfAttention):
         return V
 
     # @torch.compiler.disable
-    def forward(self, qkv, key_cache=None, val_cache=None, cache_seqlens=None):
-        if key_cache is None and val_cache is None or cache_seqlens is None:
+    def forward(self, qkv, key_cache=None, val_cache=None, seq_lens=None):
+        if key_cache is None and val_cache is None or seq_lens is None:
             B, L, *_ = qkv.shape
             if self._mask is None or self._mask.shape != (B, 1, L, L):
                 self._mask = torch.triu(
@@ -140,7 +140,7 @@ class VanillaAttention(SelfAttention):
             return self._forward_without_cache(qkv, self._mask)
         else:
             assert not self.training
-            return self._inference_with_cache(qkv, key_cache, val_cache, cache_seqlens)
+            return self._inference_with_cache(qkv, key_cache, val_cache, seq_lens)
 
 
 @gin.configurable
@@ -483,7 +483,7 @@ class AttentionLayer(nn.Module):
         )
         self.n_heads = n_heads
 
-    def forward(self, sequence, key_cache=None, val_cache=None, cache_seqlens=None):
+    def forward(self, sequence, key_cache=None, val_cache=None, seq_lens=None):
         qkv = self.dropout_qkv(self.qkv_projection(sequence))
         qkv = rearrange(
             qkv,
@@ -495,7 +495,7 @@ class AttentionLayer(nn.Module):
             qkv=qkv,
             key_cache=key_cache,
             val_cache=val_cache,
-            cache_seqlens=cache_seqlens,
+            seq_lens=seq_lens,
         )
         out = rearrange(out, "batch len heads dim -> batch len (heads dim)")
         out = self.out_projection(out)
@@ -539,10 +539,10 @@ class TransformerLayer(nn.Module):
         self.d_model = d_model
 
     # @torch.compile
-    def forward(self, self_seq, key_cache=None, val_cache=None, cache_seqlens=None):
+    def forward(self, self_seq, key_cache=None, val_cache=None, seq_lens=None):
         q1 = self.norm1(self_seq)  # pre-norm
         q1 = self.attention_layer(
-            q1, key_cache=key_cache, val_cache=val_cache, cache_seqlens=cache_seqlens
+            q1, key_cache=key_cache, val_cache=val_cache, seq_lens=seq_lens
         )
         q1 = self.norm2(q1)  # normformer extra norm 1
         self_seq = self_seq + q1
