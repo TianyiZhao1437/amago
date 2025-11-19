@@ -414,9 +414,9 @@ class Agent(nn.Module):
         mask_arr = [0] * 128
         mask_arr[0] = 1
         mask = torch.tensor(mask_arr, dtype=torch.bool).to("cuda")
-        seq_len = torch.tensor([1], dtype=torch.int32).to("cuda")
+        seq_lens = torch.tensor([0], dtype=torch.int32).to("cuda")
         traj_emb_t, hidden_state = self.traj_encoder(
-            tstep_emb, time_idxs=time_idxs, hidden_state=hidden_state, seq_len=seq_len, mask=mask
+            tstep_emb, time_idxs=time_idxs, hidden_state=hidden_state, seq_lens=seq_lens, mask=mask
         )
         # # export traj_encoder
         # fake_tstep_emb = torch.randn(1, 1, 1760).to("cuda")
