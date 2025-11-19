@@ -101,8 +101,14 @@ class VanillaAttention(SelfAttention):
         # key_cache[cache_idxs, seq_lens] = keys[:, 0]
         # val_cache[cache_idxs, seq_lens] = values[:, 0]
         # [1, 128, 20, 64] + [1, 20, 64]
-        k_cache = key_cache[cache_idxs].index_add(1, seq_lens, torch.unsqueeze(keys[:, 0], 0))
-        v_cache = val_cache[cache_idxs].index_add(1, seq_lens, torch.unsqueeze(values[:, 0], 0))
+        temp_keys = torch.unsqueeze(keys[:, 0], 0)
+        temp_values = torch.unsqueeze(values[:, 0], 0)
+        temp_key_cache = key_cache[cache_idxs]
+        temp_val_cache = val_cache[cache_idxs]
+        print("[ty]temp_keys.shape=", temp_keys.shape)
+        print("[ty]temp_key_cache.shape=", temp_key_cache.shape)
+        k_cache = temp_key_cache.index_add(1, seq_lens, temp_keys)
+        v_cache = temp_val_cache.index_add(1, seq_lens, temp_values)
 
         # max_len = seq_lens + 1
         # # max_len = end.max()
