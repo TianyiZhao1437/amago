@@ -100,13 +100,11 @@ class VanillaAttention(SelfAttention):
         cache_idxs = torch.arange(key_cache.shape[0], device=key_cache.device)
         # key_cache[cache_idxs, seq_lens] = keys[:, 0]
         # val_cache[cache_idxs, seq_lens] = values[:, 0]
-        # [1, 128, 20, 64] + [1, 20, 64]
+        # [1, 128, 20, 64] + [1, 1, 20, 64]
         temp_keys = torch.unsqueeze(keys[:, 0], 0)
         temp_values = torch.unsqueeze(values[:, 0], 0)
         temp_key_cache = key_cache[cache_idxs]
         temp_val_cache = val_cache[cache_idxs]
-        print("[ty]temp_keys.shape=", temp_keys.shape)
-        print("[ty]temp_key_cache.shape=", temp_key_cache.shape)
         k_cache = temp_key_cache.index_add(1, seq_lens, temp_keys)
         v_cache = temp_val_cache.index_add(1, seq_lens, temp_values)
 
@@ -118,6 +116,7 @@ class VanillaAttention(SelfAttention):
         # attention scores + masking
         scores = scale * torch.einsum("blhe,blhe->blh", queries, k_cache)
         # mask = torch.arange(max_len, device="cuda")[None, :] >= end[:, None]
+        mask = mask.unsqueeze(-1).expand(128, 20)
         scores.masked_fill_(mask, -torch.inf)
         # output
         A = self.dropout(torch.softmax(scores, dim=1))
