@@ -409,28 +409,31 @@ class Agent(nn.Module):
         #     input_names=["text_tokens", "numbers", "rl2s"],
         # )
 
-        # # hidden_state: concat(k_cache[9, 1, 128, 20, 64], v_cache[9, 1, 128, 20, 64])
-        # hidden_state = torch.zeros([18, 1, 128, 20, 64]).to(torch.float32).to("cuda")
-        # seq_len = 0
-        # traj_emb_t, hidden_state = self.traj_encoder(
-        #     tstep_emb, time_idxs=time_idxs, hidden_state=hidden_state, seq_len=seq_len,
-        # )
-        # export traj_encoder
-        fake_tstep_emb = torch.randn(1, 1, 1760).to("cuda")
-        fake_time_idxs = torch.zeros(1, 1, 1).to(torch.int64).to("cuda")
-        fake_hidden_state = torch.zeros([18, 1, 128, 20, 64]).to(torch.float32).to("cuda")
-        fake_seq_lens = torch.tensor([1], dtype=torch.int32).to("cuda")
+        # hidden_state: concat(k_cache[9, 1, 128, 20, 64], v_cache[9, 1, 128, 20, 64])
+        hidden_state = torch.zeros([18, 1, 128, 20, 64]).to(torch.float32).to("cuda")
         mask_arr = [0] * 128
         mask_arr[0] = 1
-        fake_mask = torch.tensor(mask_arr, dtype=torch.bool).to("cuda")
-        fake_inputs = (fake_tstep_emb, fake_time_idxs, fake_hidden_state, fake_seq_lens, fake_mask)
-        torch.onnx.export(
-            self.traj_encoder,
-            fake_inputs,
-            "traj_encoder.onnx",
-            external_data=False,
-            input_names=["seq", "time_idxs", "hidden_state", "seq_lens", "mask"],
+        mask = torch.tensor(mask_arr, dtype=torch.bool).to("cuda")
+        seq_len = torch.tensor([1], dtype=torch.int32).to("cuda")
+        traj_emb_t, hidden_state = self.traj_encoder(
+            tstep_emb, time_idxs=time_idxs, hidden_state=hidden_state, seq_len=seq_len, mask=mask
         )
+        # # export traj_encoder
+        # fake_tstep_emb = torch.randn(1, 1, 1760).to("cuda")
+        # fake_time_idxs = torch.zeros(1, 1, 1).to(torch.int64).to("cuda")
+        # fake_hidden_state = torch.zeros([18, 1, 128, 20, 64]).to(torch.float32).to("cuda")
+        # fake_seq_lens = torch.tensor([1], dtype=torch.int32).to("cuda")
+        # mask_arr = [0] * 128
+        # mask_arr[0] = 1
+        # fake_mask = torch.tensor(mask_arr, dtype=torch.bool).to("cuda")
+        # fake_inputs = (fake_tstep_emb, fake_time_idxs, fake_hidden_state, fake_seq_lens, fake_mask)
+        # torch.onnx.export(
+        #     self.traj_encoder,
+        #     fake_inputs,
+        #     "traj_encoder.onnx",
+        #     external_data=False,
+        #     input_names=["seq", "time_idxs", "hidden_state", "seq_lens", "mask"],
+        # )
 
         # generate action distribution [batch, length, len(self.gammas), d_action]
         state = traj_emb_t
