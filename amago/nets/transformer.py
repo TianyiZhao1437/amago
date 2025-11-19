@@ -103,8 +103,11 @@ class VanillaAttention(SelfAttention):
         # [1, 128, 20, 64] + [1, 1, 20, 64]
         k_cache = torch.squeeze(key_cache[cache_idxs], 0)
         v_cache = torch.squeeze(val_cache[cache_idxs], 0)
-        k_cache.index_add_(0, seq_lens, keys[:, 0])
-        v_cache.index_add_(0, seq_lens, values[:, 0])
+        # k_cache.index_add_(0, seq_lens, keys[:, 0])
+        # v_cache.index_add_(0, seq_lens, values[:, 0])
+        index = seq_lens.expand(1, 20, 64)
+        k_cache.scatter_add_(0, index, keys[:, 0])
+        v_cache.scatter_add_(0, index, values[:, 0])
 
         k_cache = torch.unsqueeze(k_cache, 0)
         v_cache = torch.unsqueeze(v_cache, 0)
