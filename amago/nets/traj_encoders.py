@@ -91,7 +91,8 @@ class TrajEncoder(nn.Module, ABC):
         seq: torch.Tensor,
         time_idxs: torch.Tensor,
         hidden_state: torch.Tensor,
-        seq_lens: int,
+        seq_lens: torch.Tensor,
+        mask: torch.Tensor,
         log_dict: Optional[dict] = None,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """Sequence model forward pass.
@@ -395,10 +396,11 @@ class TformerTrajEncoder(TrajEncoder):
         seq: torch.Tensor,
         time_idxs: torch.Tensor,
         hidden_state: torch.Tensor,
-        seq_lens: int,
+        seq_lens: torch.Tensor,
+        mask: torch.Tensor,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         assert time_idxs is not None
-        return self.tformer(seq, pos_idxs=time_idxs, hidden_state=hidden_state, seq_lens=seq_lens)
+        return self.tformer(seq, pos_idxs=time_idxs, hidden_state=hidden_state, seq_lens=seq_lens, mask=mask)
 
     @property
     def emb_dim(self) -> int:

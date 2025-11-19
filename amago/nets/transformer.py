@@ -90,7 +90,7 @@ class VanillaAttention(SelfAttention):
         self._mask = None
 
     # @torch.compile
-    def _inference_with_cache(self, qkv, key_cache, val_cache, seq_lens: int):
+    def _inference_with_cache(self, qkv, key_cache, val_cache, seq_lens, mask):
         # fmt: off
         queries, keys, values = torch.unbind(qkv, dim=2)
         B, L, H, E = queries.shape
@@ -98,17 +98,20 @@ class VanillaAttention(SelfAttention):
         scale = 1.0 / math.sqrt(E)
         # fill cache, trim sequences
         cache_idxs = torch.arange(key_cache.shape[0], device=key_cache.device)
-        key_cache[cache_idxs, seq_lens] = keys[:, 0]
-        val_cache[cache_idxs, seq_lens] = values[:, 0]
-        max_len = seq_lens + 1
-        # max_len = end.max()
-        end = torch.tensor([max_len]).to("cuda")
-        k_cache = torch.nan_to_num(key_cache[:, :max_len])
-        v_cache = torch.nan_to_num(val_cache[:, :max_len])
+        # key_cache[cache_idxs, seq_lens] = keys[:, 0]
+        # val_cache[cache_idxs, seq_lens] = values[:, 0]
+        k_cache = key_cache[cache_idxs].index_add(1, seq_lens, keys[:, 0])
+        v_cache = val_cache[cache_idxs].index_add(1, seq_lens, values[:, 0])
+
+        # max_len = seq_lens + 1
+        # # max_len = end.max()
+        # end = torch.tensor([max_len]).to("cuda")
+        # k_cache = torch.nan_to_num(key_cache[:, :max_len])
+        # v_cache = torch.nan_to_num(val_cache[:, :max_len])
         # attention scores + masking
         scores = scale * torch.einsum("blhe,blhe->blh", queries, k_cache)
-        mask = torch.arange(max_len, device="cuda")[None, :] >= end[:, None]
-        scores.masked_fill_(mask[:, :, None], -torch.inf)
+        # mask = torch.arange(max_len, device="cuda")[None, :] >= end[:, None]
+        scores.masked_fill_(mask, -torch.inf)
         # output
         A = self.dropout(torch.softmax(scores, dim=1))
         V = torch.einsum("blh,blhd->bhd", A, v_cache).unsqueeze(1)
@@ -129,7 +132,7 @@ class VanillaAttention(SelfAttention):
         return V
 
     # @torch.compiler.disable
-    def forward(self, qkv, key_cache=None, val_cache=None, seq_lens=None):
+    def forward(self, qkv, key_cache=None, val_cache=None, seq_lens=None, mask=None):
         if key_cache is None and val_cache is None or seq_lens is None:
             B, L, *_ = qkv.shape
             if self._mask is None or self._mask.shape != (B, 1, L, L):
@@ -140,7 +143,7 @@ class VanillaAttention(SelfAttention):
             return self._forward_without_cache(qkv, self._mask)
         else:
             assert not self.training
-            return self._inference_with_cache(qkv, key_cache, val_cache, seq_lens)
+            return self._inference_with_cache(qkv, key_cache, val_cache, seq_lens, mask)
 
 
 @gin.configurable
@@ -483,7 +486,7 @@ class AttentionLayer(nn.Module):
         )
         self.n_heads = n_heads
 
-    def forward(self, sequence, key_cache=None, val_cache=None, seq_lens=None):
+    def forward(self, sequence, key_cache=None, val_cache=None, seq_lens=None, mask=None):
         qkv = self.dropout_qkv(self.qkv_projection(sequence))
         qkv = rearrange(
             qkv,
@@ -496,6 +499,7 @@ class AttentionLayer(nn.Module):
             key_cache=key_cache,
             val_cache=val_cache,
             seq_lens=seq_lens,
+            mask=mask,
         )
         out = rearrange(out, "batch len heads dim -> batch len (heads dim)")
         out = self.out_projection(out)
@@ -539,10 +543,10 @@ class TransformerLayer(nn.Module):
         self.d_model = d_model
 
     # @torch.compile
-    def forward(self, self_seq, key_cache=None, val_cache=None, seq_lens=None):
+    def forward(self, self_seq, key_cache=None, val_cache=None, seq_lens=None, mask=None):
         q1 = self.norm1(self_seq)  # pre-norm
         q1 = self.attention_layer(
-            q1, key_cache=key_cache, val_cache=val_cache, seq_lens=seq_lens
+            q1, key_cache=key_cache, val_cache=val_cache, seq_lens=seq_lens, mask=mask
         )
         q1 = self.norm2(q1)  # normformer extra norm 1
         self_seq = self_seq + q1
@@ -718,7 +722,7 @@ class Transformer(nn.Module):
             seq = layer(seq, *hidden_state[i])
         return self.norm(seq)
 
-    def forward(self, seq, pos_idxs, hidden_state, seq_lens):
+    def forward(self, seq, pos_idxs, hidden_state, seq_lens, mask):
         """Transformer seq2seq
 
         Args:
@@ -745,7 +749,7 @@ class Transformer(nn.Module):
         for i, layer in enumerate(self.layers):
             k_cache = hidden_state[i]
             v_cache = hidden_state[i+9]
-            seq = layer(seq, key_cache=k_cache, val_cache=v_cache, seq_lens=seq_lens)
+            seq = layer(seq, key_cache=k_cache, val_cache=v_cache, seq_lens=seq_lens, mask=mask)
             if i == 0:
                 res_key = k_cache
                 res_val = v_cache
